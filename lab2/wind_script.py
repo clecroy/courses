@@ -18,16 +18,9 @@ arcpy.env.overwriteOutput = True
 # Local variables, speed calc:
 v_nc = "H:\\esm296-4f\\labs\\lab2\\raw\\uwnd.sig995.2013.nc"
 u_nc = "H:\\esm296-4f\\labs\\lab2\\raw\\vwnd.sig995.2013.nc"
-u_001 = "u_001"
-s_001 = "in_memory\\s_001"
-v_001 = "v_001"
-s_001_tif = "H:\\esm296-4f\\labs\\lab2\\out\\s_001.tif"
 
 # Local variables, Summary:
-in_countries = "H:\\esm296-4f\\labs\\lab2\\raw\\ne_10m_admin_0_countries.shp"
-
-s_tifs = ["h:\\esm296-4f\\labs\\lab2\\out\\s_%03d.tif" % j for j in range(1, 365, 30)]
-
+in_countries = "H:\\esm296-4f\\labs\\lab2\\raw\\World_EEZ_v8_2014.shp"
 s_avg_tif = "H:\\esm296-4f\\labs\\lab2\\out\\s_avg.tif"
 out_countries = "H:\\esm296-4f\\labs\\lab2\\lab2.gdb\\countries"
 s_countries = "H:\\esm296-4f\\labs\\lab2\\lab2.gdb\\s_countries"
@@ -35,35 +28,27 @@ s_countries = "H:\\esm296-4f\\labs\\lab2\\lab2.gdb\\s_countries"
 
 # loop over a range of values for j
 for j in range(0, 365, 30):
+
+    u_001 = "u_%03d" % j
+    s_001 = "in_memory\\s_%03d" % j
+    v_001 = "v_%03d" % j
+    s_001_tif = "H:\\esm296-4f\\labs\\lab2\\out\\s_%03d.tif" % j
     
-    # assign values based on variable j
-    s_001_tif = "h:\\esm296-4f\\labs\\lab2\\out\\s_%03d.tif" % j
-    print s_001_tif
-    
-    # assign values based on variable j
-    u_001 = "h:\\esm296-4f\\labs\\lab2\\out\\u_%03d" % j
-    print u_001
-
-     # assign values based on variable j
-    v_001 = "h:\\esm296-4f\\labs\\lab2\\out\\v_%03d" % j
-    print v_001
-
-    # assign values based on variable j
-    s_001 = "h:\\esm296-4f\\labs\\lab2\\out\\s_%03d" % j
-    print s_001
-
 
     # Process: Make NetCDF Raster Layer
-    arcpy.MakeNetCDFRasterLayer_md(v_nc, "uwnd", "lon", "lat", "u_%03d" % j, "", "time %d" % j, "BY_INDEX")
+    arcpy.MakeNetCDFRasterLayer_md(v_nc, "uwnd", "lon", "lat", "u_%03d" % j, "", "time %03d" % j, "BY_INDEX")
 
     # Process: Make NetCDF Raster Layer (2)
-    arcpy.MakeNetCDFRasterLayer_md(u_nc, "vwnd", "lon", "lat", "v_%03d" % j, "", "time %d" % j, "BY_INDEX")
+    arcpy.MakeNetCDFRasterLayer_md(u_nc, "vwnd", "lon", "lat", "v_%03d" % j, "", "time %03d" % j, "BY_INDEX")
 
     # Process: Raster Calculator
-    arcpy.gp.RasterCalculator_sa("SquareRoot( Square('%s') + Square('%s') )" % (u_001, v_001), "s_%03d" % j)
+    arcpy.gp.RasterCalculator_sa("SquareRoot( Square('%s') + Square('%s') )" % (u_001, v_001), s_001)
 
 # Process: Resample
-arcpy.Resample_management(s_001, s_001_tif, "0.25 0.25", "BILINEAR")
+    arcpy.Resample_management(s_001, s_001_tif, "0.25 0.25", "BILINEAR")
+
+    s_tifs = ["h:\\esm296-4f\\labs\\lab2\\out\\s_%03d.tif" % j for j in range(0, 365, 30)]
+print s_001_tif
 
 # Process: Copy Features
 arcpy.CopyFeatures_management(in_countries, out_countries, "", "0", "0", "0")
@@ -72,9 +57,9 @@ arcpy.CopyFeatures_management(in_countries, out_countries, "", "0", "0", "0")
 arcpy.gp.CellStatistics_sa(s_tifs, s_avg_tif, "MEAN", "DATA")
 
 # Process: Zonal Statistics as Table
-arcpy.gp.ZonalStatisticsAsTable_sa(out_countries, "NAME", s_avg_tif, s_countries, "DATA", "MIN_MAX_MEAN")
+arcpy.gp.ZonalStatisticsAsTable_sa(out_countries, "Country", s_avg_tif, s_countries, "DATA", "MIN_MAX_MEAN")
 
 # Process: Join Field
-arcpy.JoinField_management(out_countries, "NAME", s_countries, "NAME", "Min;Max;Mean")
+arcpy.JoinField_management(out_countries, "Country", s_countries, "Country", "Min;Max;Mean")
 
 
